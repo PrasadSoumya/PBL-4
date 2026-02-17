@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Block Votes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f5f6fa; color: #333; }
+
+/* ═══════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════ */
+#loginPage {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated blockchain network canvas */
+#networkCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0.7;
+}
+
+.login-top-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 1.2rem;
+  z-index: 10;
+  gap: 0.75rem;
+}
+.top-tab {
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.top-tab:hover { background: #1a5fcc; }
+.top-tab.inactive { background: transparent; color: #aaa; border: 1px solid #444; }
+.top-tab.inactive:hover { background: rgba(255,255,255,0.05); }
+
+.login-card {
+  position: relative; z-index: 10;
+  background: #fff;
+  border-radius: 12px;
+  padding: 2.5rem 2.5rem 2rem;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.login-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  color: #222;
+  margin-bottom: 1.75rem;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #dde1ea;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: #f9fafb;
+  transition: border-color 0.2s;
+}
+.input-group:focus-within { border-color: #2979ff; background: #fff; }
+.input-icon {
+  padding: 0 0.85rem;
+  color: #888;
+  font-size: 1rem;
+  flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.input-group input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.8rem 0.5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  color: #333;
+  outline: none;
+}
+.input-group input::placeholder { color: #aaa; }
+
+.login-error {
+  font-size: 0.78rem;
+  color: #e53e3e;
+  margin-bottom: 0.75rem;
+  min-height: 1.1rem;
+  text-align: center;
+}
+
+.btn-submit {
+  width: 100%;
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-submit:hover { background: #1a5fcc; }
+.btn-submit:active { transform: scale(0.98); }
+
+.login-switch {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.82rem;
+  color: #777;
+}
+.login-switch a {
+  color: #2979ff;
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+}
+.login-switch a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════
+   MAIN APP
+═══════════════════════════════════════════ */
+#appPage { display: none; min-height: 100vh; flex-direction: row; }
+#appPage.show { display: flex; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 130px;
+  background: #fff;
+  border-right: 1px solid #e8eaf0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1.5rem;
+  flex-shrink: 0;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 50;
+}
+
+.sidebar-menu-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+  width: 100%;
+  text-align: center;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.85rem 0.5rem;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  color: #888;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0;
+  text-align: center;
+  border: none;
+  background: none;
+  font-family: 'Inter', sans-serif;
+}
+.nav-item:hover { background: #f0f4ff; color: #2979ff; }
+.nav-item.active { color: #2979ff; background: #f0f4ff; border-left: 3px solid #2979ff; }
+.nav-icon { font-size: 1.3rem; }
+
+/* ── Top Header ── */
+.app-wrapper {
+  margin-left: 130px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #e8eaf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  position: sticky; top: 0; z-index: 40;
+  position: relative;
+}
+.topbar-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: -0.5px;
+}
+.topbar-user {
+  position: absolute;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #555;
+}
+.topbar-user .user-icon {
+  width: 30px; height: 30px;
+  background: #e8eaf0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.topbar-divider { height: 1px; background: #e8eaf0; }
+
+/* ── Page Content ── */
+.page-content {
+  padding: 2rem 2.5rem;
+  flex: 1;
+}
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+.dash-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+.dash-card {
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.dash-card-icon {
+  width: 50px; height: 50px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.dash-card-val { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.dash-card-lbl { font-size: 0.78rem; color: #888; margin-top: 0.2rem; }
+
+.election-status-box {
+  background: #fff;
+  border: 1px solid #e8eaf0;
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+.status-label-txt { font-size: 1rem; font-weight: 600; color: #333; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem; font-weight: 600;
+}
+.badge-idle  { background: #fff8e1; color: #f59e0b; border: 1px solid #fde68a; }
+.badge-live  { background: #ecfdf5; color: #10b981; border: 1px solid #6ee7b7; }
+.badge-ended { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ═══════════════════════════════════════════
+   VOTER LIST & CANDIDATE LIST — shared layout
+═══════════════════════════════════════════ */
+.list-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 900px) { .list-layout { grid-template-columns: 1fr; } }
+
+.list-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 1.25rem;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 600px) { .cards-grid { grid-template-columns: 1fr; } }
+
+/* Individual voter/candidate card */
+.item-card {
+  background: #fff;
+  border: 1px solid #dde1ea;
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+  transition: box-shadow 0.2s;
+}
+.item-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+
+.item-email {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.85rem;
+  word-break: break-all;
+}
+.item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 0.3rem;
+}
+.item-sub {
+  font-size: 0.78rem;
+  color: #888;
+  margin-bottom: 0.85rem;
+}
+
+.item-actions { display: flex; gap: 0.5rem; }
+
+.btn-edit {
+  background: #fff;
+  color: #16a34a;
+  border: 1.5px solid #16a34a;
+  border-radius: 6px;
+  padding: 0.35rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-edit:hover { background: #16a34a; color: #fff; }
+
+.btn-delete {
+  background: #fff;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  border-radius: 6px;
+  padding: 0.35rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-delete:hover { background: #dc2626; color: #fff; }
+
+.btn-vote-cast {
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex: 1;
+}
+.btn-vote-cast:hover { background: #1a5fcc; }
+.btn-vote-cast:disabled { background: #c3d0e8; cursor: not-allowed; }
+
+/* ── Register / Add form (right side) ── */
+.register-box {
+  background: #fff;
+  border: 1px solid #dde1ea;
+  border-radius: 10px;
+  padding: 1.75rem;
+}
+.register-box h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 1.5rem;
+}
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.4rem;
+}
+.form-input {
+  width: 100%;
+  border: 1.5px solid #dde1ea;
+  border-radius: 7px;
+  padding: 0.7rem 0.9rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 1rem;
+}
+.form-input:focus { border-color: #2979ff; }
+.form-input::placeholder { color: #bbb; }
+
+.btn-register {
+  background: #2979ff;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 0.65rem 2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.25rem;
+}
+.btn-register:hover { background: #1a5fcc; }
+
+/* ── Admin Controls (election management) ── */
+.admin-controls-box {
+  background: #fff;
+  border: 1px solid #dde1ea;
+  border-radius: 10px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+.admin-controls-box h3 {
+  font-size: 1.15rem; font-weight: 700; color: #222; margin-bottom: 1.25rem;
+}
+.control-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.btn-start {
+  background: #10b981; color: #fff; border: none;
+  border-radius: 7px; padding: 0.65rem 1.5rem;
+  font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn-start:hover { background: #059669; }
+.btn-start:disabled { background: #a7f3d0; cursor: not-allowed; }
+
+.btn-end {
+  background: #ef4444; color: #fff; border: none;
+  border-radius: 7px; padding: 0.65rem 1.5rem;
+  font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn-end:hover { background: #dc2626; }
+.btn-end:disabled { background: #fca5a5; cursor: not-allowed; }
+
+/* ── Empty state ── */
+.empty-msg {
+  text-align: center; padding: 2.5rem 1rem;
+  color: #aaa; font-size: 0.9rem;
+  grid-column: 1 / -1;
+}
+.empty-msg .e-ico { font-size: 2rem; margin-bottom: 0.5rem; }
+
+/* ── Vote results bar ── */
+.result-bar-wrap { margin-top: 0.5rem; }
+.result-bar-track { height: 5px; background: #f0f0f0; border-radius: 99px; overflow: hidden; }
+.result-bar-fill  { height: 100%; background: #2979ff; border-radius: 99px; transition: width 0.6s ease; }
+.result-pct { font-size: 0.72rem; color: #888; margin-top: 0.2rem; font-weight: 500; }
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem; z-index: 999;
+}
+.toast {
+  background: #222; color: #fff;
+  border-radius: 8px; padding: 0.75rem 1.25rem;
+  font-size: 0.85rem; max-width: 280px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 0.5rem;
+  animation: toast-in 0.3s ease-out;
+}
+.toast.success { background: #16a34a; }
+.toast.error   { background: #dc2626; }
+.toast.info    { background: #2979ff; }
+@keyframes toast-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Modal (edit) ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 12px;
+  padding: 2rem; width: 100%; max-width: 380px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+.modal-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+.btn-cancel {
+  flex: 1; background: #f5f6fa; border: 1px solid #dde1ea;
+  border-radius: 7px; padding: 0.65rem; font-family:'Inter',sans-serif;
+  font-size: 0.88rem; font-weight: 600; color: #555; cursor: pointer;
+}
+.btn-save {
+  flex: 1; background: #2979ff; color: #fff; border: none;
+  border-radius: 7px; padding: 0.65rem; font-family:'Inter',sans-serif;
+  font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.btn-save:hover { background: #1a5fcc; }
+
+/* ── Voter voting page ── */
+.vote-page-notice {
+  background: #fff; border: 1px solid #dde1ea;
+  border-radius: 10px; padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem; display: flex;
+  align-items: center; gap: 0.75rem;
+  font-size: 0.9rem; font-weight: 500;
+}
+.vote-page-notice.live  { border-color: #6ee7b7; background: #ecfdf5; color: #065f46; }
+.vote-page-notice.idle  { border-color: #fde68a; background: #fff8e1; color: #92400e; }
+.vote-page-notice.ended { border-color: #fca5a5; background: #fef2f2; color: #991b1b; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN PAGE
+═══════════════════════════════════════════ -->
+<div id="loginPage">
+  <canvas id="networkCanvas"></canvas>
+
+  <div class="login-top-bar">
+    <button class="top-tab" id="tabSignin" onclick="showLogin('signin')">Sign in</button>
+    <button class="top-tab inactive" id="tabSignup" onclick="showLogin('signup')">Sign up</button>
+  </div>
+
+  <!-- Sign In Card -->
+  <div class="login-card" id="signinCard">
+    <div class="login-card-title">Sign in</div>
+
+    <div class="input-group">
+      <span class="input-icon">👤</span>
+      <input type="email" id="siEmail" placeholder="Email address" value="admin@blockvotes.com"/>
+    </div>
+    <div class="input-group">
+      <span class="input-icon">🔒</span>
+      <input type="password" id="siPass" placeholder="Password" value="admin123"/>
+    </div>
+
+    <div class="login-error" id="siError"></div>
+    <button class="btn-submit" onclick="doSignIn()">Sign In</button>
+
+    <div class="login-switch">
+      Don't have an account? <a onclick="showLogin('signup')">Sign up</a>
+    </div>
+  </div>
+
+  <!-- Sign Up Card -->
+  <div class="login-card" id="signupCard" style="display:none">
+    <div class="login-card-title">Sign up</div>
+
+    <div class="input-group">
+      <span class="input-icon">👤</span>
+      <input type="email" id="suEmail" placeholder="Email address"/>
+    </div>
+    <div class="input-group">
+      <span class="input-icon">🔒</span>
+      <input type="password" id="suPass" placeholder="Password"/>
+    </div>
+    <div class="input-group">
+      <span class="input-icon">🔒</span>
+      <input type="password" id="suConfirm" placeholder="Confirm password"/>
+    </div>
+
+    <div class="login-error" id="suError"></div>
+    <button class="btn-submit" onclick="doSignUp()">Submit</button>
+
+    <div class="login-switch">
+      Already have an account? <a onclick="showLogin('signin')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
+<div id="appPage">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-menu-label">MENU</div>
+
+    <button class="nav-item active" onclick="goTo('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="goTo('candidates')" id="nav-candidates">
+      <span class="nav-icon">👤</span>
+      Candidate List
+    </button>
+    <button class="nav-item" onclick="goTo('voters')" id="nav-voters">
+      <span class="nav-icon">☰</span>
+      Voter List
+    </button>
+    <button class="nav-item" id="nav-vote" onclick="goTo('vote')">
+      <span class="nav-icon">🗳️</span>
+      Vote
+    </button>
+    <button class="nav-item" onclick="signOut()" style="margin-top:auto;margin-bottom:1.5rem">
+      <span class="nav-icon">🚪</span>
+      Sign Out
+    </button>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="app-wrapper">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-title">Block Votes</div>
+      <div class="topbar-user">
+        <div class="user-icon">👤</div>
+        <span id="topbarEmail">—</span>
+      </div>
+    </div>
+    <div class="topbar-divider"></div>
+
+    <!-- Pages -->
+    <div class="page-content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page-section active" id="sec-dashboard">
+        <div class="dash-cards">
+          <div class="dash-card">
+            <div class="dash-card-icon" style="background:#eff6ff">🗳️</div>
+            <div>
+              <div class="dash-card-val" id="dc-candidates" style="color:#2979ff">0</div>
+              <div class="dash-card-lbl">Candidates</div>
+            </div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-icon" style="background:#ecfdf5">👥</div>
+            <div>
+              <div class="dash-card-val" id="dc-voters" style="color:#10b981">0</div>
+              <div class="dash-card-lbl">Registered Voters</div>
+            </div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-icon" style="background:#fff8e1">✅</div>
+            <div>
+              <div class="dash-card-val" id="dc-votes" style="color:#f59e0b">0</div>
+              <div class="dash-card-lbl">Votes Cast</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Election status + controls (admin only) -->
+        <div class="election-status-box" style="margin-bottom:1.5rem">
+          <div>
+            <div class="status-label-txt">Election Status</div>
+            <div style="font-size:.82rem;color:#888;margin-top:.2rem" id="statusDesc">Not started yet</div>
+          </div>
+          <div id="statusBadge" class="status-badge badge-idle"><div class="badge-dot"></div>Not Started</div>
+        </div>
+
+        <div id="adminControlsBox" class="admin-controls-box">
+          <h3>⚙️ Election Controls</h3>
+          <div class="control-btns">
+            <button class="btn-start" id="startElBtn" onclick="startElection()">▶ Start Election</button>
+            <button class="btn-end"   id="endElBtn"   onclick="endElection()" disabled>■ End Election</button>
+          </div>
+        </div>
+
+        <!-- Results table (always visible) -->
+        <div style="background:#fff;border:1px solid #dde1ea;border-radius:10px;padding:1.5rem;">
+          <div style="font-size:1rem;font-weight:700;color:#222;margin-bottom:1rem;">📊 Live Results</div>
+          <div id="resultsArea" style="color:#aaa;font-size:.88rem;">No candidates yet.</div>
+        </div>
+      </div>
+
+      <!-- ── VOTER LIST (Admin) ── -->
+      <div class="page-section" id="sec-voters">
+        <div class="list-layout">
+          <div>
+            <div class="list-title">Voter List</div>
+            <div class="cards-grid" id="voterGrid">
+              <div class="empty-msg"><div class="e-ico">👥</div>No voters registered yet.</div>
+            </div>
+          </div>
+          <div id="voterRegBox">
+            <div class="register-box">
+              <h3>Register Voter</h3>
+              <label class="form-label">Email:</label>
+              <input class="form-input" id="voterEmailInput" placeholder="Enter your email."/>
+              <button class="btn-register" onclick="registerVoter()">Register</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CANDIDATE LIST (Admin) ── -->
+      <div class="page-section" id="sec-candidates">
+        <div class="list-layout">
+          <div>
+            <div class="list-title">Candidate List</div>
+            <div class="cards-grid" id="candidateGrid">
+              <div class="empty-msg"><div class="e-ico">🏛️</div>No candidates added yet.</div>
+            </div>
+          </div>
+          <div>
+            <div class="register-box">
+              <h3>Add Candidate</h3>
+              <label class="form-label">Full Name:</label>
+              <input class="form-input" id="candNameInput" placeholder="Candidate full name"/>
+              <label class="form-label">Party / Description:</label>
+              <input class="form-input" id="candPartyInput" placeholder="e.g. Independent"/>
+              <button class="btn-register" onclick="addCandidate()">Add Candidate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VOTE PAGE (Voter) ── -->
+      <div class="page-section" id="sec-vote">
+        <div class="list-title">Cast Your Vote</div>
+        <div id="voteNoticeBox" class="vote-page-notice idle">⏳ Election has not started yet. Please wait.</div>
+        <div class="cards-grid" id="voteGrid"></div>
+      </div>
+
+    </div><!-- end page-content -->
+  </div><!-- end app-wrapper -->
+</div><!-- end appPage -->
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title" id="editModalTitle">Edit</div>
+    <label class="form-label" id="editModalLabel">Value</label>
+    <input class="form-input" id="editModalInput" placeholder=""/>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  BLOCKCHAIN NETWORK ANIMATION
+// ══════════════════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('networkCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], animId;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function initNodes() {
+    nodes = [];
+    const count = Math.floor((W * H) / 18000);
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        r: 3 + Math.random() * 4,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Update positions
+    nodes.forEach(n => {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    });
+
+    // Draw edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 180) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          const alpha = (1 - dist / 180) * 0.5;
+          ctx.strokeStyle = `rgba(41,121,255,${alpha})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw nodes
+    nodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      // Glow
+      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 3);
+      grad.addColorStop(0, 'rgba(41,121,255,0.9)');
+      grad.addColorStop(0.5, 'rgba(0,200,255,0.4)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    });
+
+    animId = requestAnimationFrame(draw);
+  }
+
+  resize(); initNodes(); draw();
+  window.addEventListener('resize', () => { resize(); initNodes(); });
+})();
+
+// ══════════════════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════════════════
+const DB = {
+  users: [
+    { email: 'admin@blockvotes.com', pass: 'admin123', role: 'admin' },
+  ],
+  voters: [
+    { email: 'abc@abc.com' },
+    { email: 'bcd@bcd.com' },
+    { email: '8anshmehta@gmail.com' },
+    { email: 'charmeemehta01@gmail.com' },
+  ],
+  candidates: [
+    { id: 0, name: 'Alice Johnson', party: 'Progressive Party', votes: 0 },
+    { id: 1, name: 'Bob Martinez',  party: 'United Front',      votes: 0 },
+    { id: 2, name: 'Carol White',   party: 'Reform Alliance',   votes: 0 },
+  ],
+  electionStatus: 'idle', // idle | live | ended
+  voted: {}, // email -> candidateId
+};
+
+let currentUser = null;
+let editTarget  = null; // { type, index, field }
+let candIdCounter = 3;
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+function showLogin(tab) {
+  document.getElementById('signinCard').style.display = tab==='signin' ? 'block' : 'none';
+  document.getElementById('signupCard').style.display = tab==='signup' ? 'block' : 'none';
+  document.getElementById('tabSignin').className = 'top-tab' + (tab==='signin'?' ':' inactive');
+  document.getElementById('tabSignup').className = 'top-tab' + (tab==='signup'?' ':' inactive');
+}
+
+function doSignIn() {
+  const email = document.getElementById('siEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('siPass').value;
+  const errEl = document.getElementById('siError');
+  errEl.textContent = '';
+
+  // Check if voter
+  const isVoter = DB.voters.find(v => v.email.toLowerCase() === email);
+  const isAdmin = DB.users.find(u => u.email.toLowerCase() === email && u.pass === pass);
+
+  if (isAdmin) {
+    currentUser = { email: isAdmin.email, role: 'admin' };
+    enterApp();
+  } else if (isVoter) {
+    // Voters just need email (simple demo)
+    if (!pass) { errEl.textContent = 'Please enter a password.'; return; }
+    currentUser = { email: isVoter.email, role: 'voter' };
+    enterApp();
+  } else {
+    errEl.textContent = 'Invalid email or password.';
+  }
+}
+
+function doSignUp() {
+  const email   = document.getElementById('suEmail').value.trim().toLowerCase();
+  const pass    = document.getElementById('suPass').value;
+  const confirm = document.getElementById('suConfirm').value;
+  const errEl   = document.getElementById('suError');
+  errEl.textContent = '';
+
+  if (!email || !pass) { errEl.textContent = 'All fields are required.'; return; }
+  if (pass !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+  if (pass.length < 6)  { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+  // Register as voter
+  if (DB.voters.find(v => v.email.toLowerCase() === email)) {
+    errEl.textContent = 'Email already registered.'; return;
+  }
+  DB.voters.push({ email });
+  toast('Account created! You can now sign in.', 'success', '✅');
+  showLogin('signin');
+  document.getElementById('siEmail').value = email;
+}
+
+function enterApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').classList.add('show');
+  document.getElementById('topbarEmail').textContent = currentUser.email;
+
+  const isAdmin = currentUser.role === 'admin';
+
+  // Show/hide sidebar nav items based on role
+  document.getElementById('nav-voters').style.cssText    = isAdmin ? 'display:flex' : 'display:none';
+  document.getElementById('nav-candidates').style.cssText = isAdmin ? 'display:flex' : 'display:none';
+  document.getElementById('nav-vote').style.cssText       = isAdmin ? 'display:none' : 'display:flex';
+  document.getElementById('adminControlsBox').style.display = isAdmin ? 'block' : 'none';
+
+  // Voters land on Vote page directly; admins on Dashboard
+  goTo(isAdmin ? 'dashboard' : 'vote');
+  render();
+}
+
+function signOut() {
+  currentUser = null;
+  document.getElementById('nav-vote').style.cssText = 'display:none';
+  document.getElementById('nav-voters').style.cssText = 'display:flex';
+  document.getElementById('nav-candidates').style.cssText = 'display:flex';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('appPage').classList.remove('show');
+  document.getElementById('siError').textContent = '';
+  document.getElementById('siPass').value = '';
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function goTo(section) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + section).classList.add('active');
+  const nb = document.getElementById('nav-' + section);
+  if (nb) nb.classList.add('active');
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ELECTION CONTROLS
+// ══════════════════════════════════════════════════════════
+function startElection() {
+  if (DB.candidates.length === 0) { toast('Add at least one candidate first.', 'error', '❌'); return; }
+  DB.electionStatus = 'live';
+  document.getElementById('startElBtn').disabled = true;
+  document.getElementById('endElBtn').disabled = false;
+  toast('Election started! Voters can now cast votes.', 'success', '▶️');
+  render();
+}
+
+function endElection() {
+  DB.electionStatus = 'ended';
+  document.getElementById('endElBtn').disabled = true;
+  toast('Election ended. Results are final.', 'info', '🏁');
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  VOTER MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function registerVoter() {
+  const email = document.getElementById('voterEmailInput').value.trim().toLowerCase();
+  if (!email) { toast('Enter an email address.', 'error', '❌'); return; }
+  if (!/\S+@\S+\.\S+/.test(email)) { toast('Enter a valid email.', 'error', '❌'); return; }
+  if (DB.voters.find(v => v.email.toLowerCase() === email)) {
+    toast('Voter already registered.', 'error', '❌'); return;
+  }
+  DB.voters.push({ email });
+  document.getElementById('voterEmailInput').value = '';
+  toast(`Voter "${email}" registered.`, 'success', '✅');
+  render();
+}
+
+function editVoter(idx) {
+  editTarget = { type: 'voter', index: idx };
+  document.getElementById('editModalTitle').textContent = 'Edit Voter Email';
+  document.getElementById('editModalLabel').textContent = 'Email:';
+  document.getElementById('editModalInput').value = DB.voters[idx].email;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function deleteVoter(idx) {
+  const email = DB.voters[idx].email;
+  DB.voters.splice(idx, 1);
+  delete DB.voted[email];
+  toast(`Voter removed.`, 'info', '🗑️');
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  CANDIDATE MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function addCandidate() {
+  const name  = document.getElementById('candNameInput').value.trim();
+  const party = document.getElementById('candPartyInput').value.trim() || 'Independent';
+  if (!name) { toast('Enter candidate name.', 'error', '❌'); return; }
+  if (DB.electionStatus !== 'idle') { toast('Cannot add candidates after election starts.', 'error', '❌'); return; }
+  DB.candidates.push({ id: candIdCounter++, name, party, votes: 0 });
+  document.getElementById('candNameInput').value = '';
+  document.getElementById('candPartyInput').value = '';
+  toast(`"${name}" added as candidate.`, 'success', '✅');
+  render();
+}
+
+function editCandidate(idx) {
+  editTarget = { type: 'candidate', index: idx };
+  document.getElementById('editModalTitle').textContent = 'Edit Candidate Name';
+  document.getElementById('editModalLabel').textContent = 'Full Name:';
+  document.getElementById('editModalInput').value = DB.candidates[idx].name;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function deleteCandidate(idx) {
+  if (DB.electionStatus !== 'idle') { toast('Cannot delete candidates during/after election.', 'error', '❌'); return; }
+  DB.candidates.splice(idx, 1);
+  toast('Candidate removed.', 'info', '🗑️');
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  VOTING
+// ══════════════════════════════════════════════════════════
+function castVote(candidateId) {
+  if (DB.electionStatus !== 'live') { toast('Election is not active.', 'error', '❌'); return; }
+  if (DB.voted[currentUser.email] !== undefined) { toast('You have already voted!', 'error', '❌'); return; }
+  const c = DB.candidates.find(c => c.id === candidateId);
+  if (!c) return;
+  DB.voted[currentUser.email] = candidateId;
+  c.votes++;
+  toast(`Vote cast for ${c.name}!`, 'success', '🗳️');
+  render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════════
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editTarget = null;
+}
+function saveEdit() {
+  const val = document.getElementById('editModalInput').value.trim();
+  if (!val) { toast('Value cannot be empty.', 'error', '❌'); return; }
+  if (editTarget.type === 'voter') {
+    DB.voters[editTarget.index].email = val;
+    toast('Voter updated.', 'success', '✅');
+  } else if (editTarget.type === 'candidate') {
+    DB.candidates[editTarget.index].name = val;
+    toast('Candidate updated.', 'success', '✅');
+  }
+  closeModal(); render();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════
+function render() {
+  if (!currentUser) return;
+  const isAdmin = currentUser.role === 'admin';
+  const totalVotes = DB.candidates.reduce((a,c)=>a+c.votes,0);
+
+  // ── Dashboard stats ──
+  document.getElementById('dc-candidates').textContent = DB.candidates.length;
+  document.getElementById('dc-voters').textContent     = DB.voters.length;
+  document.getElementById('dc-votes').textContent      = totalVotes;
+
+  // Status badge
+  const badge = document.getElementById('statusBadge');
+  const desc  = document.getElementById('statusDesc');
+  if (DB.electionStatus === 'live') {
+    badge.className = 'status-badge badge-live';
+    badge.innerHTML = '<div class="badge-dot"></div>Live';
+    desc.textContent = 'Voting is open — voters can cast their votes.';
+  } else if (DB.electionStatus === 'ended') {
+    badge.className = 'status-badge badge-ended';
+    badge.innerHTML = '<div class="badge-dot"></div>Ended';
+    desc.textContent = 'Election has ended. Results are final.';
+  } else {
+    badge.className = 'status-badge badge-idle';
+    badge.innerHTML = '<div class="badge-dot"></div>Not Started';
+    desc.textContent = 'Election has not started yet.';
+  }
+
+  // ── Results ──
+  const ra = document.getElementById('resultsArea');
+  if (DB.candidates.length === 0) {
+    ra.innerHTML = '<div style="color:#aaa;font-size:.88rem">No candidates yet.</div>';
+  } else {
+    const sorted = [...DB.candidates].sort((a,b)=>b.votes-a.votes);
+    ra.innerHTML = sorted.map((c,i) => {
+      const pct = totalVotes>0 ? Math.round(c.votes/totalVotes*100) : 0;
+      return `
+        <div style="display:flex;align-items:center;gap:1rem;padding:.75rem 0;border-bottom:1px solid #f0f0f0">
+          <div style="width:24px;text-align:center;font-weight:700;color:#aaa">#${i+1}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:.9rem">${c.name} <span style="color:#888;font-weight:400;font-size:.78rem">${c.party}</span></div>
+            <div class="result-bar-wrap">
+              <div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div>
+              <div class="result-pct">${c.votes} vote${c.votes!==1?'s':''} · ${pct}%</div>
+            </div>
+          </div>
+          ${i===0 && DB.electionStatus==='ended' ? '<span style="font-size:1.2rem">🏆</span>' : ''}
+        </div>`;
+    }).join('');
+  }
+
+  // ── Voter grid ──
+  const vg = document.getElementById('voterGrid');
+  if (DB.voters.length === 0) {
+    vg.innerHTML = '<div class="empty-msg"><div class="e-ico">👥</div>No voters registered yet.</div>';
+  } else {
+    vg.innerHTML = DB.voters.map((v,i) => `
+      <div class="item-card">
+        <div class="item-email">${v.email}</div>
+        <div class="item-actions">
+          <button class="btn-edit"   onclick="editVoter(${i})">Edit</button>
+          <button class="btn-delete" onclick="deleteVoter(${i})">Delete</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Candidate grid ──
+  const cg = document.getElementById('candidateGrid');
+  if (DB.candidates.length === 0) {
+    cg.innerHTML = '<div class="empty-msg"><div class="e-ico">🏛️</div>No candidates added yet.</div>';
+  } else {
+    cg.innerHTML = DB.candidates.map((c,i) => `
+      <div class="item-card">
+        <div class="item-name">${c.name}</div>
+        <div class="item-sub">${c.party}</div>
+        <div class="item-actions">
+          <button class="btn-edit"   onclick="editCandidate(${i})">Edit</button>
+          <button class="btn-delete" onclick="deleteCandidate(${i})" ${DB.electionStatus!=='idle'?'disabled':''}>Delete</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Vote page (voters) ──
+  if (!isAdmin) {
+    const notice = document.getElementById('voteNoticeBox');
+    const vg2 = document.getElementById('voteGrid');
+    const hasVoted = DB.voted[currentUser.email] !== undefined;
+
+    if (DB.electionStatus === 'live') {
+      notice.className = 'vote-page-notice live';
+      notice.innerHTML = hasVoted
+        ? `✅ You have cast your vote for <strong>${DB.candidates.find(c=>c.id===DB.voted[currentUser.email])?.name||'a candidate'}</strong>.`
+        : '🟢 Election is live! Select a candidate below to vote.';
+    } else if (DB.electionStatus === 'ended') {
+      notice.className = 'vote-page-notice ended';
+      notice.innerHTML = '🏁 Election has ended. Thank you for participating.';
+    } else {
+      notice.className = 'vote-page-notice idle';
+      notice.innerHTML = '⏳ Election has not started yet. Please wait.';
+    }
+
+    if (DB.candidates.length === 0) {
+      vg2.innerHTML = '<div class="empty-msg"><div class="e-ico">🏛️</div>No candidates available.</div>';
+    } else {
+      vg2.innerHTML = DB.candidates.map(c => {
+        const voted = DB.voted[currentUser.email];
+        const myVote = voted === c.id;
+        const pct = totalVotes>0 ? Math.round(c.votes/totalVotes*100) : 0;
+        return `
+          <div class="item-card" style="${myVote?'border-color:#2979ff;background:#f0f4ff':''}">
+            <div class="item-name">${c.name} ${myVote?'<span style="color:#2979ff;font-size:.75rem">✓ Your vote</span>':''}</div>
+            <div class="item-sub">${c.party}</div>
+            <div class="result-bar-wrap" style="margin-bottom:.75rem">
+              <div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%"></div></div>
+              <div class="result-pct">${c.votes} votes · ${pct}%</div>
+            </div>
+            <div class="item-actions">
+              <button class="btn-vote-cast" onclick="castVote(${c.id})"
+                ${(DB.electionStatus!=='live'||hasVoted)?'disabled':''}>
+                ${myVote?'✓ Voted':'🗳️ Vote'}
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════════════
+function toast(msg, type='info', icon='ℹ️') {
+  const wrap = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); },3000);
+}
+
+// Enter key support
+document.getElementById('siPass').addEventListener('keydown', e => { if(e.key==='Enter') doSignIn(); });
+document.getElementById('suConfirm').addEventListener('keydown', e => { if(e.key==='Enter') doSignUp(); });
+document.getElementById('voterEmailInput')?.addEventListener('keydown', e => { if(e.key==='Enter') registerVoter(); });
+document.getElementById('candNameInput')?.addEventListener('keydown', e => { if(e.key==='Enter') addCandidate(); });
+document.getElementById('editModalInput').addEventListener('keydown', e => { if(e.key==='Enter') saveEdit(); });
+// Close modal on overlay click
+document.getElementById('editModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+</script>
+</body>
+</html>
