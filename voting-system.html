@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BlockVote — Decentralized Voting System</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #060810;
+    --surface: #0d1117;
+    --surface2: #141922;
+    --border: #1e2a3a;
+    --accent: #00e5ff;
+    --accent2: #7b61ff;
+    --green: #00ff88;
+    --red: #ff4466;
+    --yellow: #ffcc00;
+    --text: #e2e8f0;
+    --muted: #5a7a9a;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glowing orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(123,97,255,0.08) 0%, transparent 70%);
+    top: -200px; right: -200px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+  /* ── Header ── */
+  header {
+    padding: 2.5rem 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+  .logo h1 {
+    font-size: 1.5rem; font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo span {
+    display: block;
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    -webkit-text-fill-color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .chain-indicator {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .chain-dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+  }
+
+  /* ── Status Banner ── */
+  .status-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .election-status {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .status-pill {
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .status-pill.not-started { background: rgba(255,204,0,0.15); color: var(--yellow); border: 1px solid rgba(255,204,0,0.3); }
+  .status-pill.started     { background: rgba(0,255,136,0.15); color: var(--green);  border: 1px solid rgba(0,255,136,0.3); }
+  .status-pill.ended       { background: rgba(255,68,102,0.15); color: var(--red);   border: 1px solid rgba(255,68,102,0.3); }
+
+  .status-label { font-size: 0.9rem; color: var(--muted); }
+
+  .wallet-info {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .wallet-addr {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+  }
+  .role-badge {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    padding: 0.3rem 0.8rem;
+    border-radius: 8px;
+    background: rgba(123,97,255,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(123,97,255,0.3);
+  }
+
+  /* ── Blocks Feed ── */
+  .blocks-ticker {
+    display: flex; gap: 0.6rem; overflow: hidden;
+    margin-bottom: 1.5rem;
+    mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  }
+  .block-chip {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+    animation: slide-in 0.4s ease-out;
+  }
+  .block-chip .hash { color: var(--accent); }
+  @keyframes slide-in { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* ── Two column layout ── */
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 1.25rem; }
+  @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .card-title::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Candidates ── */
+  .candidate {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 0.85rem;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .candidate:hover { border-color: rgba(0,229,255,0.3); transform: translateX(3px); }
+  .candidate.winner { border-color: var(--yellow); }
+
+  .cand-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+  .cand-avatar {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .cand-info { flex: 1; }
+  .cand-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .cand-id { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
+
+  .cand-votes {
+    text-align: right;
+  }
+  .votes-num {
+    font-size: 1.6rem; font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--accent);
+    line-height: 1;
+  }
+  .votes-label { font-size: 0.65rem; color: var(--muted); font-family: var(--font-mono); }
+
+  .progress-track {
+    height: 6px; background: var(--bg);
+    border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .vote-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.5px;
+  }
+  .vote-btn:hover:not(:disabled) { opacity: 0.85; transform: scale(0.99); }
+  .vote-btn:disabled { opacity: 0.3; cursor: not-allowed; background: var(--border); color: var(--muted); }
+
+  .winner-crown { font-size: 1.1rem; }
+
+  /* ── Sidebar ── */
+  .sidebar {}
+
+  /* ── Account Switcher ── */
+  .account-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .account-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+  .account-item:hover { border-color: rgba(0,229,255,0.3); }
+  .account-item.active { border-color: var(--accent); background: rgba(0,229,255,0.06); }
+  .account-item.voted-account .acc-addr::after {
+    content: ' ✓';
+    color: var(--green);
+  }
+
+  .acc-avatar {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+  }
+  .acc-info { flex: 1; min-width: 0; }
+  .acc-name { font-size: 0.82rem; font-weight: 700; }
+  .acc-addr { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); }
+  .acc-eth { font-family: var(--font-mono); font-size: 0.75rem; color: var(--green); }
+
+  /* ── Admin Panel ── */
+  .admin-card { border-color: rgba(123,97,255,0.4); }
+
+  .input-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .input-field {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0.55rem 0.85rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: var(--accent2); }
+  .input-field::placeholder { color: var(--muted); }
+
+  .btn {
+    border: none; border-radius: 8px;
+    padding: 0.55rem 1rem;
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 0.82rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { opacity: 0.85; }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-purple { background: var(--accent2); color: #fff; }
+  .btn-green  { background: var(--green);   color: #000; }
+  .btn-red    { background: var(--red);     color: #fff; }
+  .btn-ghost  { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  /* ── TX Log ── */
+  .tx-log { max-height: 200px; overflow-y: auto; }
+  .tx-log::-webkit-scrollbar { width: 4px; }
+  .tx-log::-webkit-scrollbar-track { background: transparent; }
+  .tx-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+  .tx-item {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    animation: fade-up 0.3s ease-out;
+  }
+  .tx-item:last-child { border-bottom: none; }
+  @keyframes fade-up { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .tx-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .tx-detail { flex: 1; }
+  .tx-msg { color: var(--text); line-height: 1.4; }
+  .tx-hash { font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent); margin-top: 0.15rem; }
+  .tx-time { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); flex-shrink: 0; }
+
+  /* ── Toast ── */
+  .toast-container { position: fixed; top: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.85rem;
+    max-width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: toast-in 0.3s ease-out;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .toast.success { border-color: rgba(0,255,136,0.4); }
+  .toast.error   { border-color: rgba(255,68,102,0.4); }
+  .toast.info    { border-color: rgba(0,229,255,0.4); }
+  @keyframes toast-in { from { transform: translateX(40px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  @keyframes toast-out { to { transform: translateX(40px); opacity:0; } }
+
+  /* ── Stats bar ── */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem; margin-bottom: 1.25rem;
+  }
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem;
+    text-align: center;
+  }
+  .stat-num { font-size: 1.8rem; font-weight: 800; font-family: var(--font-mono); line-height: 1; }
+  .stat-lbl { font-size: 0.65rem; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.3rem; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  /* ── Notice ── */
+  .notice {
+    text-align: center; padding: 0.75rem;
+    border-radius: 8px; font-size: 0.85rem;
+    margin-top: 0.75rem;
+  }
+  .notice.green { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+  .notice.yellow { background: rgba(255,204,0,0.08); color: var(--yellow); border: 1px solid rgba(255,204,0,0.2); }
+  .notice.red { background: rgba(255,68,102,0.08); color: var(--red); border: 1px solid rgba(255,68,102,0.2); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🗳️</div>
+      <div>
+        <h1>BlockVote</h1>
+        <span>Decentralized Voting Protocol</span>
+      </div>
+    </div>
+    <div class="chain-indicator">
+      <div class="chain-dot"></div>
+      <span id="chainLabel">Chain ID: 31337 · Local</span>
+    </div>
+  </header>
+
+  <!-- Block ticker -->
+  <div class="blocks-ticker" id="blockTicker"></div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-num" id="statCandidates" style="color:var(--accent)">0</div>
+      <div class="stat-lbl">Candidates</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statVotes" style="color:var(--green)">0</div>
+      <div class="stat-lbl">Total Votes</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statBlock" style="color:var(--accent2)">1</div>
+      <div class="stat-lbl">Block Height</div>
+    </div>
+  </div>
+
+  <!-- Status Banner -->
+  <div class="status-banner">
+    <div class="election-status">
+      <div class="status-pill not-started" id="statusPill">NOT STARTED</div>
+      <span class="status-label" id="statusLabel">Waiting for admin to start the election</span>
+    </div>
+    <div class="wallet-info">
+      <div class="wallet-addr" id="walletAddr">0xf39F...2266</div>
+      <div class="role-badge" id="roleBadge">👑 Admin</div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="layout">
+
+    <!-- Left: Candidates -->
+    <div>
+      <div class="card">
+        <div class="card-title">📋 Candidates</div>
+        <div id="candidatesList">
+          <div class="empty">
+            <div class="empty-icon">🏛️</div>
+            <div>No candidates yet.<br/>Admin can add candidates below.</div>
+          </div>
+        </div>
+        <div id="voteNotice"></div>
+      </div>
+    </div>
+
+    <!-- Right: Sidebar -->
+    <div class="sidebar">
+
+      <!-- Account Switcher -->
+      <div class="card">
+        <div class="card-title">👤 Accounts</div>
+        <div class="account-list" id="accountList"></div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div class="card admin-card" id="adminPanel">
+        <div class="card-title">👑 Admin Panel</div>
+
+        <div id="addCandidateSection">
+          <div class="input-row">
+            <input class="input-field" id="candidateInput" placeholder="Candidate name..." maxlength="30"/>
+            <button class="btn btn-purple" onclick="addCandidate()">+ Add</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-direction:column;">
+          <button class="btn btn-green" id="startBtn" onclick="startElection()">▶️ Start Election</button>
+          <button class="btn btn-red"   id="endBtn"   onclick="endElection()" style="display:none">⏹️ End Election</button>
+        </div>
+      </div>
+
+      <!-- TX Log -->
+      <div class="card">
+        <div class="card-title">⛓️ Transaction Log</div>
+        <div class="tx-log" id="txLog">
+          <div class="tx-item">
+            <span class="tx-icon">🏗️</span>
+            <div class="tx-detail">
+              <div class="tx-msg">Contract deployed by Admin</div>
+              <div class="tx-hash">0x7a2b...contract</div>
+            </div>
+            <span class="tx-time">just now</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  SIMULATED BLOCKCHAIN STATE
+// ════════════════════════════════════════════════════════════════
+
+const ACCOUNTS = [
+  { name: "Admin",   address: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", short: "0xf39F...2266", eth: 9999.82, color: "#7b61ff", emoji: "👑" },
+  { name: "Voter 1", address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", short: "0x7099...79C8", eth: 9999.99, color: "#00e5ff", emoji: "🧑" },
+  { name: "Voter 2", address: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", short: "0x3C44...93BC", eth: 9999.99, color: "#00ff88", emoji: "👩" },
+  { name: "Voter 3", address: "0x90F79bf6EB2c4f870365E785982E1f101E93b906", short: "0x90F7...B906", eth: 9999.99, color: "#ffcc00", emoji: "🧔" },
+];
+
+const state = {
+  currentAccount: 0,   // index into ACCOUNTS
+  electionStatus: "not-started",  // "not-started" | "started" | "ended"
+  candidates: [],
+  voted: {},           // address -> candidateId
+  blockHeight: 1,
+  txCount: 0,
+};
+
+// ════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════
+
+function fakeHash() {
+  const h = [...Array(8)].map(()=>Math.floor(Math.random()*16).toString(16)).join('');
+  return `0x${h}...${[...Array(4)].map(()=>Math.floor(Math.random()*16).toString(16)).join('')}`;
+}
+
+function mineBlock() {
+  state.blockHeight++;
+  state.txCount++;
+  document.getElementById('statBlock').textContent = state.blockHeight;
+  addBlockChip();
+}
+
+function addBlockChip() {
+  const ticker = document.getElementById('blockTicker');
+  const chip = document.createElement('div');
+  chip.className = 'block-chip';
+  chip.innerHTML = `Block <span class="hash">#${state.blockHeight}</span> · ${state.txCount} txns · ${fakeHash()}`;
+  ticker.insertBefore(chip, ticker.firstChild);
+  if (ticker.children.length > 8) ticker.removeChild(ticker.lastChild);
+}
+
+function addTx(icon, msg) {
+  const hash = fakeHash();
+  const log = document.getElementById('txLog');
+  const item = document.createElement('div');
+  item.className = 'tx-item';
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  item.innerHTML = `
+    <span class="tx-icon">${icon}</span>
+    <div class="tx-detail">
+      <div class="tx-msg">${msg}</div>
+      <div class="tx-hash">${hash}</div>
+    </div>
+    <span class="tx-time">${time}</span>
+  `;
+  log.insertBefore(item, log.firstChild);
+}
+
+function showToast(msg, type = 'info', icon = 'ℹ️') {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(() => {
+    t.style.animation = 'toast-out 0.3s ease-in forwards';
+    setTimeout(() => t.remove(), 300);
+  }, 3000);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════
+
+const COLORS = ['#7b61ff','#00e5ff','#00ff88','#ffcc00','#ff4466','#ff9500','#ff61d8','#61ffb4'];
+
+function render() {
+  const acc = ACCOUNTS[state.currentAccount];
+  const isAdmin = state.currentAccount === 0;
+  const hasVoted = state.voted[acc.address] !== undefined;
+  const isStarted = state.electionStatus === 'started';
+  const isEnded = state.electionStatus === 'ended';
+
+  // Wallet
+  document.getElementById('walletAddr').textContent = acc.short;
+  document.getElementById('roleBadge').textContent = isAdmin ? '👑 Admin' : '🗳️ Voter';
+
+  // Status pill
+  const pill = document.getElementById('statusPill');
+  const lbl  = document.getElementById('statusLabel');
+  pill.className = 'status-pill';
+  if (isEnded) {
+    pill.classList.add('ended'); pill.textContent = 'ENDED';
+    lbl.textContent = 'Election has ended — results are final';
+  } else if (isStarted) {
+    pill.classList.add('started'); pill.textContent = 'LIVE';
+    lbl.textContent = 'Election is live — cast your vote!';
+  } else {
+    pill.classList.add('not-started'); pill.textContent = 'NOT STARTED';
+    lbl.textContent = 'Waiting for admin to start the election';
+  }
+
+  // Stats
+  const totalVotes = state.candidates.reduce((a, c) => a + c.votes, 0);
+  document.getElementById('statCandidates').textContent = state.candidates.length;
+  document.getElementById('statVotes').textContent = totalVotes;
+
+  // Admin panel
+  const adminPanel = document.getElementById('adminPanel');
+  adminPanel.style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('addCandidateSection').style.display = (!isStarted && !isEnded) ? 'block' : 'none';
+  document.getElementById('startBtn').style.display = (!isStarted && !isEnded) ? 'block' : 'none';
+  document.getElementById('endBtn').style.display   = (isStarted) ? 'block' : 'none';
+  document.getElementById('startBtn').disabled = state.candidates.length === 0;
+
+  // Candidates
+  const list = document.getElementById('candidatesList');
+  if (state.candidates.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🏛️</div><div>No candidates yet.<br/>Admin can add candidates below.</div></div>`;
+  } else {
+    const maxVotes = Math.max(...state.candidates.map(c => c.votes), 1);
+    const winner = isEnded ? state.candidates.reduce((a,b) => b.votes > a.votes ? b : a) : null;
+
+    list.innerHTML = state.candidates.map((c, i) => {
+      const pct = totalVotes > 0 ? Math.round((c.votes / totalVotes) * 100) : 0;
+      const barW = totalVotes > 0 ? (c.votes / maxVotes) * 100 : 0;
+      const color = COLORS[i % COLORS.length];
+      const isWinner = winner && winner.id === c.id;
+      const canVote = isStarted && !isAdmin && !hasVoted && !isEnded;
+
+      return `
+        <div class="candidate ${isWinner ? 'winner' : ''}">
+          <div class="cand-top">
+            <div class="cand-avatar" style="background:${color}22;color:${color};">${c.name.charAt(0).toUpperCase()}</div>
+            <div class="cand-info">
+              <div class="cand-name">${c.name} ${isWinner ? '<span class="winner-crown">🏆</span>' : ''}</div>
+              <div class="cand-id">Candidate #${c.id} · ${pct}% of votes</div>
+            </div>
+            <div class="cand-votes">
+              <div class="votes-num">${c.votes}</div>
+              <div class="votes-label">votes</div>
+            </div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" style="width:${barW}%;background:linear-gradient(90deg,${color},${color}88)"></div>
+          </div>
+          ${canVote ? `<button class="vote-btn" onclick="castVote(${c.id})">🗳️ Vote for ${c.name}</button>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Vote notice
+  const notice = document.getElementById('voteNotice');
+  if (hasVoted && isStarted) {
+    const votedFor = state.candidates.find(c => c.id === state.voted[acc.address]);
+    notice.innerHTML = `<div class="notice green">✅ You voted for <strong>${votedFor ? votedFor.name : 'a candidate'}</strong></div>`;
+  } else if (isEnded) {
+    notice.innerHTML = `<div class="notice red">🏁 Election ended — results are final on the blockchain</div>`;
+  } else if (!isStarted && !isAdmin) {
+    notice.innerHTML = `<div class="notice yellow">⏳ Election hasn't started yet — standby</div>`;
+  } else if (isStarted && isAdmin) {
+    notice.innerHTML = `<div class="notice yellow">👑 Admins cannot vote — switch to a voter account</div>`;
+  } else {
+    notice.innerHTML = '';
+  }
+
+  // Accounts
+  const accList = document.getElementById('accountList');
+  accList.innerHTML = ACCOUNTS.map((a, i) => {
+    const voted = state.voted[a.address] !== undefined;
+    return `
+      <div class="account-item ${i === state.currentAccount ? 'active' : ''} ${voted ? 'voted-account' : ''}"
+           onclick="switchAccount(${i})">
+        <div class="acc-avatar" style="background:${a.color}22;color:${a.color};">${a.emoji}</div>
+        <div class="acc-info">
+          <div class="acc-name">${a.name} ${i === 0 ? '(Admin)' : ''}</div>
+          <div class="acc-addr">${a.short}${voted ? ' ✓' : ''}</div>
+        </div>
+        <div class="acc-eth">${a.eth} ETH</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ACTIONS
+// ════════════════════════════════════════════════════════════════
+
+function switchAccount(i) {
+  state.currentAccount = i;
+  render();
+  showToast(`Switched to ${ACCOUNTS[i].name}`, 'info', ACCOUNTS[i].emoji);
+}
+
+function addCandidate() {
+  if (state.currentAccount !== 0) return showToast('Only admin can add candidates', 'error', '❌');
+  if (state.electionStatus !== 'not-started') return showToast('Cannot add candidates after election starts', 'error', '❌');
+
+  const input = document.getElementById('candidateInput');
+  const name = input.value.trim();
+  if (!name) return showToast('Please enter a candidate name', 'error', '❌');
+
+  const id = state.candidates.length;
+  state.candidates.push({ id, name, votes: 0 });
+  input.value = '';
+
+  mineBlock();
+  addTx('🧑', `CandidateAdded: "${name}" (ID: ${id})`);
+  showToast(`${name} added as candidate #${id}`, 'success', '✅');
+  render();
+}
+
+function startElection() {
+  if (state.currentAccount !== 0) return showToast('Only admin can start election', 'error', '❌');
+  if (state.candidates.length === 0) return showToast('Add at least one candidate first', 'error', '❌');
+  if (state.electionStatus !== 'not-started') return showToast('Election already started', 'error', '❌');
+
+  state.electionStatus = 'started';
+  mineBlock();
+  addTx('▶️', `ElectionStarted · Block #${state.blockHeight}`);
+  showToast('Election is now LIVE! Voters can cast their votes.', 'success', '▶️');
+  render();
+}
+
+function endElection() {
+  if (state.currentAccount !== 0) return showToast('Only admin can end election', 'error', '❌');
+  if (state.electionStatus !== 'started') return showToast('Election has not started', 'error', '❌');
+
+  state.electionStatus = 'ended';
+  mineBlock();
+  addTx('⏹️', `ElectionEnded · Block #${state.blockHeight}`);
+  showToast('Election ended! Results are now final.', 'info', '🏁');
+  render();
+}
+
+function castVote(candidateId) {
+  const acc = ACCOUNTS[state.currentAccount];
+  if (state.currentAccount === 0) return showToast('Admin cannot vote', 'error', '❌');
+  if (state.electionStatus !== 'started') return showToast('Election is not active', 'error', '❌');
+  if (state.voted[acc.address] !== undefined) return showToast('You have already voted!', 'error', '❌');
+
+  state.voted[acc.address] = candidateId;
+  state.candidates[candidateId].votes++;
+  ACCOUNTS[state.currentAccount].eth = +(ACCOUNTS[state.currentAccount].eth - 0.0021).toFixed(4);
+
+  mineBlock();
+  addTx('🗳️', `VoteCast · ${acc.short} → Candidate #${candidateId} (${state.candidates[candidateId].name})`);
+  showToast(`Vote cast for ${state.candidates[candidateId].name}!`, 'success', '🗳️');
+  render();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+
+// Seed with example candidates
+state.candidates = [
+  { id: 0, name: "Alice Johnson", votes: 0 },
+  { id: 1, name: "Bob Martinez",  votes: 0 },
+  { id: 2, name: "Carol White",   votes: 0 },
+];
+addTx('🧑', 'CandidateAdded: "Alice Johnson" (ID: 0)');
+addTx('🧑', 'CandidateAdded: "Bob Martinez" (ID: 1)');
+addTx('🧑', 'CandidateAdded: "Carol White" (ID: 2)');
+
+// Seed a couple of blocks
+addBlockChip(); addBlockChip(); addBlockChip();
+
+// Keyboard shortcut for candidate input
+document.getElementById('candidateInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addCandidate();
+});
+
+render();
+</script>
+</body>
+</html>
